@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹캠 캡처 스튜디오</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="app-container">
+            <div class="app-header">
+                <h1 class="app-title">Eye-Open Camera</h1>
+                <p class="app-subtitle">셀프 사진을 찍어보세요</p>
+                <div class="camera-info">
+                    <!-- SVG 아이콘 생략 -->
+                    <span id="resolution-text">해상도: 분석 중...</span>
+                </div>
+            </div>
+            
+            <div class="webcam-filter-bar">
+                <div class="filter-option active">일반</div>
+                <div class="filter-option">흑백</div>
+                <div class="filter-option">세피아</div>
+                <div class="filter-option">빈티지</div>
+                <div class="filter-option">선명하게</div>
+                <div class="filter-option">부드럽게</div>
+            </div>
+            
+            <div class="camera-container">
+                <div class="camera-frame">
+                    <video id="video-element" autoplay playsinline></video>
+                    <img id="captured-image" alt="Captured">
+                    <div class="camera-overlay"></div>
+                    <div class="camera-guideline"></div>
+                    <div class="flash-effect" id="flash"></div>
+                </div>
+                <div class="resolution-badge" id="resolution-badge"></div>
+            </div>
+            
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="capture-btn">사진 촬영</button>
+            </div>
+            
+            <div class="result-container" id="result-container">
+                <div class="result-actions">
+                    <button class="btn btn-outline" id="retake-btn">다시 찍기</button>
+                    <button class="btn btn-secondary" id="download-btn">저장하기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

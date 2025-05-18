@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>웹캠 캡처 스튜디오</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --primary-color: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --secondary-color: #f43f5e;
+            --dark-bg: #1f2937;
+            --light-bg: #f9fafb;
+            --card-bg: #ffffff;
+            --text-dark: #1f2937;
+            --text-light: #f9fafb;
+            --text-muted: #9ca3af;
+            --border-radius: 12px;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-dark);
+            padding: 20px;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 920px;
+            margin: 0 auto;
+        }
+        
+        .app-container {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+        
+        .app-header {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .app-subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+        
+        .camera-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .camera-info-icon {
+            margin-right: 5px;
+        }
+        
+        .camera-container {
+            position: relative;
+            padding: 20px;
+            background: var(--light-bg);
+        }
+        
+        .camera-frame {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            background-color: #000;
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #video-element {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #captured-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        
+        .camera-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 2px solid var(--primary-light);
+            border-radius: var(--border-radius);
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='none' stroke='%23FFFFFF20' stroke-width='1' stroke-dasharray='5,5' stroke-dashoffset='0' stroke-linecap='butt'/%3E%3C/svg%3E");
+        }
+        
+        .camera-overlay::before, 
+        .camera-overlay::after {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-color: #fff;
+            border-style: solid;
+            border-width: 2px 0 0 2px;
+            opacity: 0.7;
+        }
+        
+        .camera-overlay::before {
+            top: 15px;
+            left: 15px;
+            border-radius: 5px 0 0 0;
+        }
+        
+        .camera-overlay::after {
+            top: 15px;
+            right: 15px;
+            transform: rotate(90deg);
+            border-radius: 5px 0 0 0;
+        }
+        
+        .camera-controls {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            outline: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.3);
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+            box-shadow: 0 4px 6px rgba(244, 63, 94, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background-color: #e11d48;
+            transform: translateY(-2px);
+            box-shadow: 0 7px 14px rgba(244, 63, 94, 0.4);
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+        
+        .btn-outline:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-icon {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .result-container {
+            padding: 20px;
+            display: none;
+        }
+        
+        .result-actions {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .webcam-filter-bar {
+            display: flex;
+            overflow-x: auto;
+            gap: 10px;
+            padding: 10px 20px;
+            background-color: rgba(0, 0, 0, 0.03);
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        
+        .filter-option {
+            flex: 0 0 auto;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid #e5e7eb;
+        }
+        
+        .filter-option.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .filter-option:hover:not(.active) {
+            background-color: #e5e7eb;
+        }
+        
+        .resolution-badge {
+            background-color: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-top: 6px;
+            display: inline-block;
+        }
+        
+        .flash-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: white;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.1s ease-out;
+        }
+        
+        .camera-guideline {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            height: 80%;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            pointer-events: none;
+        }
+        
+        canvas {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .app-title {
+                font-size: 1.5rem;
+            }
+            
+            .camera-info {
+                position: static;
+                margin: 10px auto 0;
+                display: inline-flex;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-container">
+            <div class="app-header">
+                <h1 class="app-title">웹캠 캡처 스튜디오</h1>
+                <p class="app-subtitle">고화질 셀프 사진을 찍어보세요</p>
+                <div class="camera-info">
+                    <svg class="camera-info-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    <span id="resolution-text">해상도: 분석 중...</span>
+                </div>
+            </div>
+            
+            <div class="webcam-filter-bar">
+                <div class="filter-option active">일반</div>
+                <div class="filter-option">흑백</div>
+                <div class="filter-option">세피아</div>
+                <div class="filter-option">빈티지</div>
+                <div class="filter-option">선명하게</div>
+                <div class="filter-option">부드럽게</div>
+            </div>
+            
+            <div class="camera-container">
+                <div class="camera-frame">
+                    <video id="video-element" autoplay playsinline></video>
+                    <img id="captured-image" />
+                    <div class="camera-overlay"></div>
+                    <div class="camera-guideline"></div>
+                    <div class="flash-effect" id="flash"></div>
+                </div>
+                <div class="resolution-badge" id="resolution-badge"></div>
+            </div>
+            
+            <div class="camera-controls">
+                <button class="btn btn-primary" id="capture-btn">
+                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    사진 촬영
+                </button>
+            </div>
+            
+            <div class="result-container" id="result-container">
+                <div class="result-actions">
+                    <button class="btn btn-outline" id="retake-btn">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                        다시 찍기
+                    </button>
+                    <button class="btn btn-secondary" id="download-btn">
+                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        저장하기
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <canvas id="canvas"></canvas>
+    
+    <script>
+        // 웹캠 관련 변수
+        const video = document.getElementById('video-element');
+        const canvas = document.getElementById('canvas');
+        const capturedImage = document.getElementById('captured-image');
+        const captureBtn = document.getElementById('capture-btn');
+        const retakeBtn = document.getElementById('retake-btn');
+        const downloadBtn = document.getElementById('download-btn');
+        const resultContainer = document.getElementById('result-container');
+        const resolutionText = document.getElementById('resolution-text');
+        const resolutionBadge = document.getElementById('resolution-badge');
+        const flash = document.getElementById('flash');
+        
+        // 카메라 시작 함수
+        async function startCamera() {
+            try {
+                // 최대 해상도로 카메라 요청
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                });
+                
+                video.srcObject = stream;
+                
+                // 실제 해상도 정보 가져오기
+                video.onloadedmetadata = () => {
+                    const track = stream.getVideoTracks()[0];
+                    const settings = track.getSettings();
+                    
+                    const width = settings.width;
+                    const height = settings.height;
+                    const megapixels = (width * height / 1000000).toFixed(2);
+                    
+                    resolutionText.textContent = `해상도: ${width}×${height} (${megapixels}MP)`;
+                    resolutionBadge.textContent = `${width}×${height}`;
+                    
+                    // 캔버스 크기 설정
+                    canvas.width = width;
+                    canvas.height = height;
+                };
+            } catch (err) {
+                console.error("웹캠 접근 오류:", err);
+                alert("웹캠에 접근할 수 없습니다. 카메라 권한을 확인해주세요.");
+            }
+        }
+        
+        // 사진 촬영 함수
+        function capturePhoto() {
+            const context = canvas.getContext('2d');
+            
+            // 플래시 효과
+            flash.style.opacity = '0.8';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+            }, 100);
+            
+            // 비디오 프레임을 캔버스에 그리기
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // 캔버스의 이미지를 데이터 URL로 변환
+            const imageDataUrl = canvas.toDataURL('image/png');
+            capturedImage.src = imageDataUrl;
+            capturedImage.style.display = 'block';
+            video.style.display = 'none';
+            
+            // 결과 컨테이너 표시
+            resultContainer.style.display = 'block';
+            captureBtn.style.display = 'none';
+        }
+        
+        // 다시 찍기 함수
+        function retakePhoto() {
+            capturedImage.style.display = 'none';
+            video.style.display = 'block';
+            resultContainer.style.display = 'none';
+            captureBtn.style.display = 'inline-flex';
+        }
+        
+        // 이미지 다운로드 함수
+        function downloadPhoto() {
+            const link = document.createElement('a');
+            link.href = capturedImage.src;
+            link.download = `webcam-capture-${new Date().toISOString()}.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // 이벤트 리스너 등록
+        captureBtn.addEventListener('click', capturePhoto);
+        retakeBtn.addEventListener('click', retakePhoto);
+        downloadBtn.addEventListener('click', downloadPhoto);
+        
+        // 필터 옵션 처리
+        const filterOptions = document.querySelectorAll('.filter-option');
+        filterOptions.forEach((option) => {
+            option.addEventListener('click', () => {
+                // 활성 클래스 제거
+                filterOptions.forEach(o => o.classList.remove('active'));
+                // 클릭한 옵션에 활성 클래스 추가
+                option.classList.add('active');
+                
+                // 선택한 필터에 따라 비디오 스타일 변경
+                const filterName = option.textContent;
+                switch(filterName) {
+                    case '흑백':
+                        video.style.filter = 'grayscale(100%)';
+                        break;
+                    case '세피아':
+                        video.style.filter = 'sepia(100%)';
+                        break;
+                    case '빈티지':
+                        video.style.filter = 'sepia(50%) contrast(110%) brightness(110%) saturate(80%)';
+                        break;
+                    case '선명하게':
+                        video.style.filter = 'contrast(130%) brightness(110%) saturate(130%)';
+                        break;
+                    case '부드럽게':
+                        video.style.filter = 'contrast(90%) brightness(105%) saturate(90%) blur(1px)';
+                        break;
+                    default:
+                        video.style.filter = 'none';
+                }
+            });
+        });
+        
+        // 카메라 시작
+        startCamera();
+    </script>
+</body>
+</html>
