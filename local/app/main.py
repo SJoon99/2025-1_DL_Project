@@ -1,8 +1,7 @@
-# app/main.py
 import time
 from io import BytesIO
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template  # render_template 추가
 from PIL import Image
 import cv2
 import numpy as np
@@ -21,15 +20,17 @@ def predict_eyes_open(model, pil_img):
     TODO: PIL 이미지를 전처리 한 뒤 모델에 넣고,
     눈 뜸(True)/감음(False)을 리턴하도록 구현
     """
-    # 예시: 
-    # tensor = preprocess(pil_img).unsqueeze(0)
-    # with torch.no_grad():
-    #     out = model(tensor)
-    # return out.argmax().item() == OPEN_LABEL
     return True  # 임시로 항상 뜸으로 리턴
 
+# Flask 인스턴스 생성 시 templates 경로 지정 (필요하다면)
 app = Flask(__name__)
 model = load_model()
+
+# ① 루트 화면을 띄우는 라우트 추가
+@app.route('/')
+def index():
+    return render_template('main.html')
+
 
 @app.route('/api/check-eyes', methods=['POST'])
 def check_eyes():
@@ -44,11 +45,11 @@ def check_eyes():
     eyes_open = predict_eyes_open(model, img)
 
     if eyes_open:
-        # 눈 다 뜬 경우: 원래 로직(그냥 성공 응답) 그대로
+        # 눈 다 뜬 경우
         return jsonify({'eyes_open': True}), 200
     else:
         # 눈 감은 경우: 1초 동안 영상 녹화
-        cap = cv2.VideoCapture(0)  # 0번 카메라
+        cap = cv2.VideoCapture(0)
         if not cap.isOpened():
             return jsonify({'error': 'cannot open camera'}), 500
 
@@ -68,12 +69,10 @@ def check_eyes():
         cap.release()
         out.release()
 
-        # 필요하면 이 파일을 S3 등에 올리거나, 클라이언트에 전송하도록 구현
         return jsonify({
             'eyes_open': False,
             'video_path': 'closed_eye_capture.avi'
         }), 200
 
 if __name__ == '__main__':
-    # 로컬에서 디버그 모드로
     app.run(debug=True, host='0.0.0.0', port=5000)
