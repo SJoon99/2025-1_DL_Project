@@ -34,45 +34,51 @@ def index():
 
 @app.route('/api/check-eyes', methods=['POST'])
 def check_eyes():
-    # 1) 클라이언트에서 보낸 이미지 받기
+    # 2) 클라이언트에서 보낸 이미지 받기
     if 'image' not in request.files:
         return jsonify({'error': 'no image uploaded'}), 400
 
     file = request.files['image']
     img = Image.open(BytesIO(file.read())).convert('RGB')
 
-    # 2) 눈 뜸/감음 예측
-    eyes_open = predict_eyes_open(model, img)
+    return jsonify({
+        'status': 'success',
+        'message': 'Image received successfully',
+        'image_size': img.size
+    }),200
 
-    if eyes_open:
-        # 눈 다 뜬 경우
-        return jsonify({'eyes_open': True}), 200
-    else:
-        # 눈 감은 경우: 1초 동안 영상 녹화
-        cap = cv2.VideoCapture(0)
-        if not cap.isOpened():
-            return jsonify({'error': 'cannot open camera'}), 500
+    # # 2) 눈 뜸/감음 예측
+    # eyes_open = predict_eyes_open(model, img)
 
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out = cv2.VideoWriter('closed_eye_capture.avi', fourcc, 20.0, (
-            int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        ))
+    # if eyes_open:
+    #     # 눈 다 뜬 경우
+    #     return jsonify({'eyes_open': True}), 200
+    # else:
+    #     # 눈 감은 경우: 1초 동안 영상 녹화
+    #     cap = cv2.VideoCapture(0)
+    #     if not cap.isOpened():
+    #         return jsonify({'error': 'cannot open camera'}), 500
 
-        start = time.time()
-        while time.time() - start < 1.0:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            out.write(frame)
+    #     fourcc = cv2.VideoWriter_fourcc(*'XVID')
+    #     out = cv2.VideoWriter('closed_eye_capture.avi', fourcc, 20.0, (
+    #         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+    #         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    #     ))
 
-        cap.release()
-        out.release()
+    #     start = time.time()
+    #     while time.time() - start < 1.0:
+    #         ret, frame = cap.read()
+    #         if not ret:
+    #             break
+    #         out.write(frame)
 
-        return jsonify({
-            'eyes_open': False,
-            'video_path': 'closed_eye_capture.avi'
-        }), 200
+    #     cap.release()
+    #     out.release()
+
+    #     return jsonify({
+    #         'eyes_open': False,
+    #         'video_path': 'closed_eye_capture.avi'
+    #     }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

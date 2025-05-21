@@ -45,6 +45,8 @@ function capturePhoto() {
     resultContainer.style.display = 'block';
     captureBtn.style.display = 'inline-flex';
     captureBtn.style.display = 'none';
+
+    sendImageToServer(imageDataUrl);
 }
 
 // 다시 찍기 함수
@@ -63,6 +65,51 @@ function downloadPhoto() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+function sendImageToServer(imageDataUrl) {
+    const base64Data = imageDataUrl.split(',')[1];
+    const blobData = b64toBlob(base64Data, 'image/png');
+
+    const formData = new FormData();
+    formData.append('image', blobData, 'captured-image.png');
+
+    fetch('/api/check-eyes', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('서버 응답:', data);
+        
+        // 테스트 단계에서는 서버 응답을 확인하기 위한 알림 표시
+        alert(`이미지 전송 성공!\n크기: ${data.image_size[0]}x${data.image_size[1]}\n${data.message}`);
+        
+        // 나중에 eyes_open 기능이 다시 활성화되면 아래 코드 사용
+        // if (!data.eyes_open) {
+        //     alert('눈을 감은 것이 감지되었습니다! 카메라 녹화가 시작되었습니다.')
+        // }
+    })
+    .catch(error => {
+        console.error('서버 오류:', error);
+        alert('이미지 전송 중 오류가 발생했습니다.');
+    });
+}
+
+// Base64 문자열을 Blob으로 변환하는 함수
+function b64toBlob(b64Data, contentType='', sliceSize=512) {
+    const byteCharacters = atob(b64Data);
+    const byteArrays = [];
+    for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
+        const slice = byteCharacters.slice(offset, offset + sliceSize);
+        const byteNumbers = new Array(slice.length);
+        for (let i = 0; i < slice.length; i++) {
+            byteNumbers[i] = slice.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+    }
+    return new Blob(byteArrays, { type: contentType });
 }
 
 // 필터 옵션 처리
