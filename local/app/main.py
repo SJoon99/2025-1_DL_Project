@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify, render_template  # render_template �
 from PIL import Image
 import cv2
 import numpy as np
+from datetime import datetime
 # import torch  # 예: PyTorch 모델을 쓴다면
 
 def load_model():
@@ -32,57 +33,48 @@ def index():
     return render_template('main.html')
 
 
-@app.route('/api/check-eyes', methods=['POST'])
-def check_eyes():
-    # 2) 클라이언트에서 보낸 이미지 받기
+@app.route('/api/predict-eyes', methods=['POST'])
+def predict_eyes():
+    """이미지 받아서 눈 감음/뜸 예측만"""
     if 'image' not in request.files:
         return jsonify({'error': 'no image uploaded'}), 400
 
     file = request.files['image']
     img = Image.open(BytesIO(file.read())).convert('RGB')
 
-    # 해당 640 x 640 크기로 리사이즈
+    # 640 x 640 크기로 리사이즈
     img = img.resize((640, 640))
-    img.save('received_image.jpg')
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    img.save(f'captured_image_{timestamp}.jpg')
 
+    # TODO: 실제 AI 모델로 예측
+    import random
+    eyes_open = random.choice([True, False])  # 테스트용
+    
     return jsonify({
         'status': 'success',
-        'message': 'Image received successfully',
-        'image_size': img.size
-    }),200
+        'eyes_open': eyes_open,
+        'message': 'Eyes open' if eyes_open else 'Eyes closed',
+        'timestamp': timestamp
+    }), 200
 
-    # # 2) 눈 뜸/감음 예측
-    # eyes_open = 1
+@app.route('/api/save-video', methods=['POST'])
+def save_video():
+    """동영상 파일 저장"""
+    if 'video' not in request.files:
+        return jsonify({'error': 'no video uploaded'}), 400
 
-    # if eyes_open:
-    #     # 눈 다 뜬 경우
-    #     return jsonify({'eyes_open': True}), 200
-    # else:
-    #     # 눈 감은 경우: 1초 동안 영상 녹화
-    #     cap = cv2.VideoCapture(0)
-    #     if not cap.isOpened():
-    #         return jsonify({'error': 'cannot open camera'}), 500
-
-    #     fourcc = cv2.VideoWriter_fourcc(*'XVID')
-    #     out = cv2.VideoWriter('closed_eye_capture.avi', fourcc, 20.0, (
-    #         int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-    #         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    #     ))
-
-    #     start = time.time()
-    #     while time.time() - start < 1.0:
-    #         ret, frame = cap.read()
-    #         if not ret:
-    #             break
-    #         out.write(frame)
-
-    #     cap.release()
-    #     out.release()
-
-    #     return jsonify({
-    #         'eyes_open': False,
-    #         'video_path': 'closed_eye_capture.avi'
-    #     }), 200
+    video_file = request.files['video']
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f'closed_eyes_video_{timestamp}.webm'
+    
+    video_file.save(filename)
+    
+    return jsonify({
+        'status': 'success',
+        'message': 'Video saved successfully',
+        'filename': filename
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)

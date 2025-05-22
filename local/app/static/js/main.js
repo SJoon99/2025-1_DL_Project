@@ -9,6 +9,17 @@ const resultContainer = document.getElementById('result-container');
 const resolutionText = document.getElementById('resolution-text');
 const resolutionBadge = document.getElementById('resolution-badge');
 const flash = document.getElementById('flash');
+let mediaRecorder;
+let recordedChunks = [];
+
+function showSpinner() {
+    document.getElementById('loading-spinner').style.display = 'block';
+}
+
+function hideSpinner() {
+    document.getElementById('loading-spinner').style.display = 'none';
+}
+
 
 // 카메라 시작 함수
 async function startCamera() {
@@ -49,14 +60,14 @@ function capturePhoto() {
         capturedImage.style.display = 'block';
         video.style.display = 'none';
         resultContainer.style.display = 'block';
-        captureBtn.style.display = 'inline-flex';
         captureBtn.style.display = 'none';
 
-        sendImageToServer(imageDataUrl);
-    }, 0); // 0ms로 분리하여 오디오 재생 직후 실행
+        // 이미지 먼저 서버로 전송해서 예측
+        sendImageForPrediction(imageDataUrl);
+    }, 0);
 }
 
-// 다시 찍기 함수
+// 다시 찍기 함수 (기존 함수 그대로 활용)
 function retakePhoto() {
     capturedImage.style.display = 'none';
     video.style.display = 'block';
@@ -74,32 +85,89 @@ function downloadPhoto() {
     document.body.removeChild(link);
 }
 
-function sendImageToServer(imageDataUrl) {
+// 이미지 예측 요청 함수
+function sendImageForPrediction(imageDataUrl) {
     const base64Data = imageDataUrl.split(',')[1];
     const blobData = b64toBlob(base64Data, 'image/png');
 
     const formData = new FormData();
     formData.append('image', blobData, 'captured-image.png');
 
-    fetch('/api/check-eyes', {
+    fetch('/api/predict-eyes', {
         method: 'POST',
         body: formData
     })
     .then(response => response.json())
     .then(data => {
-        console.log('서버 응답:', data);
+        console.log('예측 결과:', data);
         
-        // 테스트 단계에서는 서버 응답을 확인하기 위한 알림 표시
-        alert(`이미지 전송 성공!\n크기: ${data.image_size[0]}x${data.image_size[1]}\n${data.message}`);
-        
-        // 나중에 eyes_open 기능이 다시 활성화되면 아래 코드 사용
-        // if (!data.eyes_open) {
-        //     alert('눈을 감은 것이 감지되었습니다! 카메라 녹화가 시작되었습니다.')
-        // }
+        if (data.eyes_open) {
+            // 눈이 떠있는 경우
+            retakePhoto(); // 기존 함수 활용해서 카메라 화면으로 돌아감
+        } else {
+            // 눈이 감긴 경우 - 1초 동영상 캡처
+            startVideoRecording();
+        }
     })
     .catch(error => {
-        console.error('서버 오류:', error);
-        alert('이미지 전송 중 오류가 발생했습니다.');
+        console.error('예측 오류:', error);
+        retakePhoto(); // 오류 시에도 카메라 화면으로 돌아감
+    });
+}
+
+// 1초 동영상 녹화 시작
+function startVideoRecording() {
+    const stream = video.srcObject;
+    recordedChunks = [];
+
+    showSpinner(); // 로딩 스피너 표시
+    
+    // MediaRecorder 설정
+    mediaRecorder = new MediaRecorder(stream, { 
+        mimeType: 'video/webm;codecs=vp8' 
+    });
+    
+    mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+        }
+    };
+    
+    mediaRecorder.onstop = () => {
+        // 동영상 녹화 완료 후 서버로 전송
+        const videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        sendVideoToServer(videoBlob);
+    };
+    
+    // 1초 녹화 시작
+    mediaRecorder.start();
+    console.log('동영상 녹화 시작...');
+    
+    setTimeout(() => {
+        mediaRecorder.stop();
+        console.log('동영상 녹화 완료');
+    }, 1000);
+}
+
+// 동영상 서버 전송
+function sendVideoToServer(videoBlob) {
+    const formData = new FormData();
+    formData.append('video', videoBlob, 'recorded-video.webm');
+
+    fetch('/api/save-video', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('동영상 저장 결과:', data);
+        hideSpinner(); // 로딩 스피너 숨김
+        retakePhoto(); // 기존 함수 활용해서 카메라 화면으로 돌아감
+    })
+    .catch(error => {
+        console.error('동영상 저장 오류:', error);
+        hideSpinner(); // 로딩 스피너 숨김
+        retakePhoto(); // 오류 시에도 카메라 화면으로 돌아감
     });
 }
 
