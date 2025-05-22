@@ -41,6 +41,10 @@ def check_eyes():
     file = request.files['image']
     img = Image.open(BytesIO(file.read())).convert('RGB')
 
+    # 해당 640 x 640 크기로 리사이즈
+    img = img.resize((640, 640))
+    img.save('received_image.jpg')
+
     return jsonify({
         'status': 'success',
         'message': 'Image received successfully',
@@ -48,7 +52,7 @@ def check_eyes():
     }),200
 
     # # 2) 눈 뜸/감음 예측
-    # eyes_open = predict_eyes_open(model, img)
+    # eyes_open = 1
 
     # if eyes_open:
     #     # 눈 다 뜬 경우

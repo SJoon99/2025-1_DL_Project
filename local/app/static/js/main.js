@@ -34,19 +34,26 @@ async function startCamera() {
 
 // 사진 촬영 함수
 function capturePhoto() {
-    const context = canvas.getContext('2d');
-    flash.style.opacity = '0.8';
-    setTimeout(() => flash.style.opacity = '0', 100);
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageDataUrl = canvas.toDataURL('image/png');
-    capturedImage.src = imageDataUrl;
-    capturedImage.style.display = 'block';
-    video.style.display = 'none';
-    resultContainer.style.display = 'block';
-    captureBtn.style.display = 'inline-flex';
-    captureBtn.style.display = 'none';
+    // 버튼을 누르는 순간 촬영 효과 음향 재생 (비동기 분리)
+    const audio = new Audio('/static/sound/camera_sound.mp3');
+    audio.play().catch(() => {}); // 자동재생 정책 대응
 
-    sendImageToServer(imageDataUrl);
+    // 바로 효과음 재생 후 이미지 캡처 진행
+    setTimeout(() => {
+        const context = canvas.getContext('2d');
+        flash.style.opacity = '0.8';
+        setTimeout(() => flash.style.opacity = '0', 100);
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageDataUrl = canvas.toDataURL('image/png');
+        capturedImage.src = imageDataUrl;
+        capturedImage.style.display = 'block';
+        video.style.display = 'none';
+        resultContainer.style.display = 'block';
+        captureBtn.style.display = 'inline-flex';
+        captureBtn.style.display = 'none';
+
+        sendImageToServer(imageDataUrl);
+    }, 0); // 0ms로 분리하여 오디오 재생 직후 실행
 }
 
 // 다시 찍기 함수
