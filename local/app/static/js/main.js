@@ -100,10 +100,9 @@ function sendImageForPrediction(imageDataUrl) {
     .then(response => response.json())
     .then(data => {
         console.log('예측 결과:', data);
-        
         if (data.eyes_open) {
             // 눈이 떠있는 경우
-            retakePhoto(); // 기존 함수 활용해서 카메라 화면으로 돌아감
+            // retakePhoto(); // 기존 함수 활용해서 카메라 화면으로 돌아감
         } else {
             // 눈이 감긴 경우 - 1초 동영상 캡처
             startVideoRecording();
@@ -146,7 +145,7 @@ function startVideoRecording() {
     setTimeout(() => {
         mediaRecorder.stop();
         console.log('동영상 녹화 완료');
-    }, 1000);
+    }, 1200);
 }
 
 // 동영상 서버 전송
@@ -162,7 +161,19 @@ function sendVideoToServer(videoBlob) {
     .then(data => {
         console.log('동영상 저장 결과:', data);
         hideSpinner(); // 로딩 스피너 숨김
-        retakePhoto(); // 기존 함수 활용해서 카메라 화면으로 돌아감
+        if (data.eyes_open_frame) {
+            // base64로 된 최종 이미지 표시
+            const imgSrc = 'data:image/jpeg;base64,' + data.eyes_open_frame;
+            const capturedImage = document.getElementById('captured-image');
+            capturedImage.src = imgSrc;
+            capturedImage.style.display = 'block';
+            video.style.display = 'none';
+            resultContainer.style.display = 'block';
+            captureBtn.style.display = 'none';
+        } else {
+            alert("눈 뜬 프레임을 찾지 못했습니다.");
+            retakePhoto();
+        }
     })
     .catch(error => {
         console.error('동영상 저장 오류:', error);

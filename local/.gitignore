@@ -1,1 +1,14 @@
 /dl/
+
+/video_frames/
+
+# 모델 가중치 파일 무시
+*.pt
+*.pth
+
+# Jupyter 노트북 무시 
+crop.ipynb
+Deep-predict.ipynb
+
+# 감지된 얼굴 이미지 무시
+detected_face_*.jpg
