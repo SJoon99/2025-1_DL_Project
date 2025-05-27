@@ -2,7 +2,9 @@
 
 ### 개요
 
-![실행 화면 예시]("Screenshot.png")
+<div align="center">
+  <img src="Screenshot.png" width="400"/>
+</div>
 
 웹캠(또는 동영상)으로 촬영한 얼굴에서 눈을 감았는지/떴는지 실시간으로 판별하고, 눈을 감은 경우 1초짜리 동영상을 분석하여 눈을 뜬 프레임을 추출하는 AI 기반 웹 서비스
 
