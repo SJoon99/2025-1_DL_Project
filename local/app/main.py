@@ -14,7 +14,7 @@ import imageio
 import os
 
 # 1-1) 얼굴 탐지용 YOLOv8 모델
-YOLO_MODEL_PATH = '/home/joon/GIST/lecture/dl/2025-1_DL_Project/local/best.pt'
+YOLO_MODEL_PATH = '/home/joon/GIST/lecture/dl/2025-1_DL_Project/local/best2.pt'
 face_detector = YOLO(YOLO_MODEL_PATH)
 
 # 1-2) 눈 상태 분류용 CoAtNet 모델
@@ -60,7 +60,6 @@ def detect_faces_yolo(model_weight, orig_img, device='cpu'):
 def predict_eye_state(face_img_np: np.ndarray) -> bool:
     # RGB numpy 이미지를 받아 CoAtNet으로 눈 상태 예측.
     # True = 눈 뜬 상태, False = 눈 감은 상태
-    # numpy → PIL → transform → 배치 차원 추가 → 모델
     pil = Image.fromarray(face_img_np)
     tensor = eye_transform(pil).unsqueeze(0).to(DEVICE)
 
@@ -113,24 +112,23 @@ def extract_frames_with_faces(video_path, every_n=15, output_dir='video_frames')
             print(f"✅ 눈을 뜬 프레임 저장 완료: {output_path}")
             found_open_eyes = True
             reader.close()
-            return frame  # 혹은 return output_path
-
+            return frame  
     reader.close()
     if not found_open_eyes:
         print("눈을 뜬 프레임을 찾지 못함")
     return None
 
 
-# Flask 인스턴스 생성 시 templates 경로 지정 
+
 app = Flask(__name__, template_folder='templates', static_folder='static')
 
 
-# ① 루트 화면을 띄우는 라우트 추가
+# 루트 화면을 띄우는 라우트
 @app.route('/')
 def index():
     return render_template('main.html')
 
-
+# 눈 상태 예측 API
 @app.route('/api/predict-eyes', methods=['POST'])
 def predict_eyes():
     """이미지 받아서 눈 감음/뜸 예측만"""
@@ -142,19 +140,17 @@ def predict_eyes():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     img.save(f'captured_image_{timestamp}.jpg')
 
-    # 3. OpenCV BGR 포맷으로 변환
     cv_img = cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
-    # 4. 얼굴 탐지 및 크롭
     faces = detect_faces_yolo(YOLO_MODEL_PATH, cv_img, device='cpu')
     if not faces:
         return jsonify({'error': 'No face detected'}), 400
 
-    # 5. 각 얼굴별 눈 상태 예측
+    # 각 얼굴별 눈 상태 예측
     eye_states = [predict_eye_state(face) for face in faces]
     all_open = all(eye_states)
 
-    # 6. 결과 반환
+    # 결과 반환
     return jsonify({
         'status': 'success',
         'eyes_open': all_open,
@@ -190,7 +186,7 @@ def save_video():
             'status': 'success',
             'message': 'Video processed and eyes-open frame found.',
             'filename': filename,
-            'eyes_open_frame': img_base64  # base64로 클라이언트에 전달
+            'eyes_open_frame': img_base64  # base64로 전달
         }), 200
     else:
         return jsonify({
