@@ -13,11 +13,11 @@ import torch
 import imageio
 import os
 
-# 1-1) 얼굴 탐지용 YOLOv8 모델
+# 얼굴 탐지용 YOLOv8 모델
 YOLO_MODEL_PATH = '/home/joon/GIST/lecture/dl/2025-1_DL_Project/local/best2.pt'
 face_detector = YOLO(YOLO_MODEL_PATH)
 
-# 1-2) 눈 상태 분류용 CoAtNet 모델
+# 눈 상태 분류용 CoAtNet 모델
 DEVICE = torch.device("cpu")
 eye_model = timm.create_model('coatnet_1_rw_224', pretrained=True, num_classes=2)
 eye_model.load_state_dict(
@@ -27,7 +27,7 @@ eye_model.load_state_dict(
 eye_model.to(DEVICE)
 eye_model.eval()
 
-# 1-3) 눈 상태 분류 전처리
+# 눈 상태 분류 전처리
 eye_transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -69,7 +69,7 @@ def predict_eye_state(face_img_np: np.ndarray) -> bool:
 
     return (pred == 1)
 
-# 2) 동영상에서 눈을 뜬 프레임 추출
+# 동영상에서 눈을 뜬 프레임 추출
 def extract_frames_with_faces(video_path, every_n=15, output_dir='video_frames'):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
